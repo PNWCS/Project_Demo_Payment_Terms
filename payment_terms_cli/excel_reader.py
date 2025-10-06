@@ -1,4 +1,5 @@
 """Excel extraction stubs for payment terms."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -36,7 +37,9 @@ def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
         workbook.close()
         return []
 
-    headers = [str(header).strip() if header is not None else "" for header in headers_row]
+    headers = [
+        str(header).strip() if header is not None else "" for header in headers_row
+    ]
     header_index = {header: idx for idx, header in enumerate(headers)}
 
     def _value(row, column_name: str):
@@ -70,7 +73,9 @@ def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
             if not record_id:
                 continue
 
-            terms.append(PaymentTerm(record_id=record_id, name=name_str, source="excel"))
+            terms.append(
+                PaymentTerm(record_id=record_id, name=name_str, source="excel")
+            )
     finally:
         workbook.close()
 

@@ -1,8 +1,9 @@
 """High-level orchestration for the payment term CLI."""
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Dict, List
 
 from . import comparer, excel_reader, qb_gateway
 from .models import Conflict, PaymentTerm
@@ -67,11 +68,17 @@ def run_payment_terms(
         qb_terms = qb_gateway.fetch_payment_terms(company_file_path)
         comparison = comparer.compare_payment_terms(excel_terms, qb_terms)
 
-        added_terms = qb_gateway.add_payment_terms_batch(company_file_path, comparison.excel_only)
+        added_terms = qb_gateway.add_payment_terms_batch(
+            company_file_path, comparison.excel_only
+        )
 
         conflicts: List[Dict[str, object]] = []
-        conflicts.extend(_conflict_to_dict(conflict) for conflict in comparison.conflicts)
-        conflicts.extend(_missing_in_excel_conflict(term) for term in comparison.qb_only)
+        conflicts.extend(
+            _conflict_to_dict(conflict) for conflict in comparison.conflicts
+        )
+        conflicts.extend(
+            _missing_in_excel_conflict(term) for term in comparison.qb_only
+        )
 
         report_payload["added_terms"] = [_term_to_dict(term) for term in added_terms]
         report_payload["conflicts"] = conflicts

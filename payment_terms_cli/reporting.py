@@ -1,4 +1,5 @@
 """Utilities for writing JSON reports."""
+
 from __future__ import annotations
 
 import json

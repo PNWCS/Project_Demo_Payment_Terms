@@ -1,4 +1,5 @@
 """Domain models for payment term synchronisation."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -37,4 +38,10 @@ class ComparisonReport:
     conflicts: list[Conflict] = field(default_factory=list)
 
 
-__all__ = ["PaymentTerm", "Conflict", "ComparisonReport", "ConflictReason", "SourceLiteral"]
+__all__ = [
+    "PaymentTerm",
+    "Conflict",
+    "ComparisonReport",
+    "ConflictReason",
+    "SourceLiteral",
+]

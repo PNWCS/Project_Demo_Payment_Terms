@@ -1,4 +1,5 @@
 """Comparison helpers for payment terms."""
+
 from __future__ import annotations
 
 from typing import Dict, Iterable
@@ -26,7 +27,9 @@ def compare_payment_terms(
 
     report = ComparisonReport()
 
-    all_ids = sorted(set(excel_index) | set(qb_index), key=lambda value: (len(value), value))
+    all_ids = sorted(
+        set(excel_index) | set(qb_index), key=lambda value: (len(value), value)
+    )
 
     for record_id in all_ids:
         excel_term = excel_index.get(record_id)

@@ -1,8 +1,9 @@
 """Tests for the payment terms runner module."""
+
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -106,7 +107,9 @@ class TestRunPaymentTerms:
         mock_extract_excel.assert_called_once_with(Path(workbook_path))
         mock_fetch_qb.assert_called_once_with("")
         mock_compare.assert_called_once_with(mock_excel_terms, mock_qb_terms)
-        mock_add_batch.assert_called_once_with("", mock_comparison_no_conflicts.excel_only)
+        mock_add_batch.assert_called_once_with(
+            "", mock_comparison_no_conflicts.excel_only
+        )
 
         # Verify report payload
         report_call = mock_write_report.call_args[0]
