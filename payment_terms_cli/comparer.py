@@ -108,8 +108,36 @@ def compare_payment_terms(
     in any of the report's collections (no conflict, not Excel-only, not QB-only).
     """
 
-    
-    raise NotImplementedError("Students must implement this function")  
+    # Index terms by record_id for quick lookup
+    excel_dict: Dict[str, PaymentTerm] = {term.record_id: term for term in excel_terms}
+    qb_dict: Dict[str, PaymentTerm] = {term.record_id: term for term in qb_terms}
+
+    # Excel only terms
+    excel_only = [term for term in excel_dict.values() if term.record_id not in qb_dict]
+
+    # QB only terms
+    qb_only = [term for term in qb_dict.values() if term.record_id not in excel_dict]
+
+    # Conflicts: same record_id but different names
+    conflicts = []
+    common_ids = set(excel_dict.keys()).intersection(qb_dict.keys())
+    for record_id in common_ids:
+        excel_name = excel_dict[record_id].name
+        qb_name = qb_dict[record_id].name
+        if excel_name != qb_name:
+            conflicts.append(
+                Conflict(
+                    record_id=record_id,
+                    excel_name=excel_name,
+                    qb_name=qb_name,
+                    reason="name_mismatch",
+                )
+            )
+    return ComparisonReport(
+        excel_only=excel_only,
+        qb_only=qb_only,
+        conflicts=conflicts,
+    )
 
 
 __all__ = ["compare_payment_terms"]
