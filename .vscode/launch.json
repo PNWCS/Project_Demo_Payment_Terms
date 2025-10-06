@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug: CLI with workbook",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "payment_terms_cli",
+      "args": [
+        "--workbook",
+        "Sample_Company_Data_Paymentterms.xlsx"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Debug: CLI with workbook and output",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "payment_terms_cli",
+      "args": [
+        "--workbook",
+        "company_terms.xlsx",
+        "--output",
+        "report.json"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Debug: CLI (custom args)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "payment_terms_cli",
+      "args": [],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+  ]
+}
