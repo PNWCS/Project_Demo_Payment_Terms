@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "payment-terms-cli"
+version = "0.1.0"
+description = "Template CLI for synchronising payment terms between Excel and QuickBooks"
+authors = ["PNW Engineering Team <engineering@example.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "payment_terms_cli" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pywin32 = "^306"
+openpyxl = "^3.1"
+pre-commit = "^4.3.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-mock = "^3.12"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["payment_terms_cli"]
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
