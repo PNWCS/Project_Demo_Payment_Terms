@@ -67,10 +67,7 @@ def run_payment_terms(
         qb_terms = qb_gateway.fetch_payment_terms(company_file_path)
         comparison = comparer.compare_payment_terms(excel_terms, qb_terms)
 
-        added_terms: List[PaymentTerm] = []
-        for term in comparison.excel_only:
-            created = qb_gateway.add_payment_term(company_file_path, term)
-            added_terms.append(created)
+        added_terms = qb_gateway.add_payment_terms_batch(company_file_path, comparison.excel_only)
 
         conflicts: List[Dict[str, object]] = []
         conflicts.extend(_conflict_to_dict(conflict) for conflict in comparison.conflicts)
