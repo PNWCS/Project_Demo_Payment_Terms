@@ -107,9 +107,41 @@ def compare_payment_terms(
     Note: NET60 appears in both sources with the same name, so it does not appear
     in any of the report's collections (no conflict, not Excel-only, not QB-only).
     """
+    # Build lookup dictionaries for quick record_id-based comparison
+    excel_dict: Dict[str, PaymentTerm] = {term.record_id: term for term in excel_terms}
+    qb_dict: Dict[str, PaymentTerm] = {term.record_id: term for term in qb_terms}
 
-    
-    raise NotImplementedError("Students must implement this function")  
+    # Extract sets of record IDs
+    excel_ids = set(excel_dict.keys())
+    qb_ids = set(qb_dict.keys())
+
+    # Terms that exist only in Excel
+    excel_only = [excel_dict[rid] for rid in excel_ids - qb_ids]
+
+    # Terms that exist only in QuickBooks
+    qb_only = [qb_dict[rid] for rid in qb_ids - excel_ids]
+
+    # Terms present in both — check for name mismatches
+    conflicts: list[Conflict] = []
+    for rid in excel_ids & qb_ids:
+        excel_term = excel_dict[rid]
+        qb_term = qb_dict[rid]
+        if excel_term.name != qb_term.name:
+            conflicts.append(
+                Conflict(
+                    record_id=rid,
+                    excel_name=excel_term.name,
+                    qb_name=qb_term.name,
+                    reason="name_mismatch",
+                )
+            )
+
+    # Return the comparison report
+    return ComparisonReport(
+        excel_only=excel_only,
+        qb_only=qb_only,
+        conflicts=conflicts,
+    )
 
 
 __all__ = ["compare_payment_terms"]
