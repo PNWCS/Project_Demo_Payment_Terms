@@ -1,19 +1,19 @@
 {
   "status": "success",
-  "generated_at": "2025-10-06T17:48:32.559088+00:00",
+  "generated_at": "2025-10-06T18:36:00.485690+00:00",
   "added_terms": [],
   "conflicts": [
+    {
+      "record_id": "12",
+      "excel_name": "new  term",
+      "qb_name": "Net 100",
+      "reason": "name_mismatch"
+    },
     {
       "record_id": "1",
       "excel_name": "15",
       "qb_name": "Net 30",
       "reason": "name_mismatch"
-    },
-    {
-      "record_id": "14",
-      "excel_name": null,
-      "qb_name": "qb new term",
-      "reason": "missing_in_excel"
     }
   ],
   "error": null
