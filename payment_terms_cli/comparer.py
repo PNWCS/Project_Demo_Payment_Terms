@@ -107,9 +107,38 @@ def compare_payment_terms(
     Note: NET60 appears in both sources with the same name, so it does not appear
     in any of the report's collections (no conflict, not Excel-only, not QB-only).
     """
+    excel_index: Dict[str, PaymentTerm] = {term.record_id: term for term in excel_terms}
+    qb_index: Dict[str, PaymentTerm] = {term.record_id: term for term in qb_terms}
 
-    
-    raise NotImplementedError("Students must implement this function")  
+    report = ComparisonReport()
+
+    all_ids = sorted(
+        set(excel_index) | set(qb_index), key=lambda value: (len(value), value)
+    )
+
+    for record_id in all_ids:
+        excel_term = excel_index.get(record_id)
+        qb_term = qb_index.get(record_id)
+
+        if excel_term and not qb_term:
+            report.excel_only.append(excel_term)
+            continue
+
+        if qb_term and not excel_term:
+            report.qb_only.append(qb_term)
+            continue
+
+        if excel_term and qb_term and excel_term.name != qb_term.name:
+            report.conflicts.append(
+                Conflict(
+                    record_id=record_id,
+                    excel_name=excel_term.name,
+                    qb_name=qb_term.name,
+                    reason="name_mismatch",
+                )
+            )
+
+    return report
 
 
 __all__ = ["compare_payment_terms"]
