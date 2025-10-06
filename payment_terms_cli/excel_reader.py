@@ -13,8 +13,7 @@ from .models import PaymentTerm
 def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
     """Return payment terms parsed from the Excel workbook.
 
-    Students should implement this function using their preferred Excel
-    library (e.g., ``openpyxl`` or ``pandas``). It must read the
+    Students should implement this function using ``openpyxl``. It must read the
     ``payment_terms`` worksheet, build :class:`~payment_terms_cli.models.PaymentTerm`
     instances with ``source="excel"``, and raise :class:`FileNotFoundError`
     if the workbook cannot be located.
