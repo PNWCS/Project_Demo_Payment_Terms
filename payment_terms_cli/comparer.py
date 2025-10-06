@@ -108,11 +108,11 @@ def compare_payment_terms(
     in any of the report's collections (no conflict, not Excel-only, not QB-only).
     """
 
-    # Index terms by record_id for quick lookup 
+    # Index terms by record_id for quick lookup
     excel_dict: Dict[str, PaymentTerm] = {term.record_id: term for term in excel_terms}
     qb_dict: Dict[str, PaymentTerm] = {term.record_id: term for term in qb_terms}
 
-    #Excel only terms
+    # Excel only terms
     excel_only = [term for term in excel_dict.values() if term.record_id not in qb_dict]
 
     # QB only terms
@@ -138,5 +138,6 @@ def compare_payment_terms(
         qb_only=qb_only,
         conflicts=conflicts,
     )
+
 
 __all__ = ["compare_payment_terms"]
