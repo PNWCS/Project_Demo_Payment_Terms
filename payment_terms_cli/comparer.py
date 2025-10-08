@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Iterable
+from typing import Iterable
 
 from .models import ComparisonReport, Conflict, PaymentTerm
 
@@ -107,9 +107,36 @@ def compare_payment_terms(
     Note: NET60 appears in both sources with the same name, so it does not appear
     in any of the report's collections (no conflict, not Excel-only, not QB-only).
     """
+    # Build dicts for fast lookup: record_id -> PaymentTerm
+    excel_dict = {term.record_id: term for term in excel_terms}
+    qb_dict = {term.record_id: term for term in qb_terms}
 
-    
-    raise NotImplementedError("Students must implement this function")  
+    excel_only = []
+    qb_only = []
+    conflicts = []
+
+    # Terms only in Excel
+    for record_id, term in excel_dict.items():
+        if record_id not in qb_dict:
+            excel_only.append(term)
+        else:
+            qb_term = qb_dict[record_id]
+            if term.name != qb_term.name:
+                conflicts.append(
+                    Conflict(
+                        record_id=record_id,
+                        excel_name=term.name,
+                        qb_name=qb_term.name,
+                        reason="name_mismatch",
+                    )
+                )
+
+    # Terms only in QuickBooks
+    for record_id, term in qb_dict.items():
+        if record_id not in excel_dict:
+            qb_only.append(term)
+
+    return ComparisonReport(excel_only=excel_only, qb_only=qb_only, conflicts=conflicts)
 
 
 __all__ = ["compare_payment_terms"]
