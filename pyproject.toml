@@ -9,7 +9,7 @@ packages = [{ include = "payment_terms_cli" }]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.15"
-pywin32 = "^306"
+
 openpyxl = "^3.1"
 pre-commit = "^4.3.0"
 pyinstaller = "^6.16.0"
