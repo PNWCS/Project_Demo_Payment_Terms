@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "generated_at": "2025-10-08T18:24:10.053379+00:00",
+  "added_terms": [
+    {
+      "record_id": "9",
+      "name": "Due on receipt",
+      "source": "quickbooks"
+    },
+    {
+      "record_id": "12",
+      "name": "new  term",
+      "source": "quickbooks"
+    }
+  ],
+  "conflicts": [
+    {
+      "record_id": "1",
+      "excel_name": "15",
+      "qb_name": "Net 30",
+      "reason": "name_mismatch"
+    }
+  ],
+  "error": null
+}
