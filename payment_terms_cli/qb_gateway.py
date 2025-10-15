@@ -14,7 +14,7 @@ except ImportError:  # pragma: no cover
 from .models import PaymentTerm
 
 
-APP_NAME = "Quickbooks Connector" # do not chanege this
+APP_NAME = "Quickbooks Connector"  # do not chanege this
 
 
 def _require_win32com() -> None:
