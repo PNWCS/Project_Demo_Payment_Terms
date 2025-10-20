@@ -16,7 +16,7 @@ poetry install
 
 Command-line usage:
 ```bash
-poetry run python -m payment_terms_cli --workbook company_terms.xlsx [--output report.json]
+poetry run python -m payment_terms_cli --workbook PaymentTerms.xlsx [--output report.json]
 ```
 
 Run tests with:

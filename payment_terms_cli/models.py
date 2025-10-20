@@ -1,41 +1,48 @@
-"""Domain models for payment term synchronisation."""
+"""Domain models for payment term synchronisation.
 
-from __future__ import annotations
+These dataclasses represent the core entities shared throughout the tool:
+payment terms, conflicts between sources, and the aggregate comparison report.
+"""
 
-from dataclasses import dataclass, field
-from typing import Literal
+from __future__ import annotations  # Postponed evaluation of annotations (PEP 563)
 
+from dataclasses import dataclass, field  # Dataclass utilities
+from typing import Literal  # Constrained string types for clarity
 
-SourceLiteral = Literal["excel", "quickbooks"]
-ConflictReason = Literal["name_mismatch", "missing_in_excel", "missing_in_quickbooks"]
+SourceLiteral = Literal["excel", "quickbooks"]  # Origin of a PaymentTerm
+ConflictReason = Literal[
+    "name_mismatch", "missing_in_excel", "missing_in_quickbooks"
+]  # Why a conflict exists
 
 
 @dataclass(slots=True)
 class PaymentTerm:
     """Represents a payment term synchronised between Excel and QuickBooks."""
 
-    record_id: str
-    name: str
-    source: SourceLiteral
+    record_id: str  # Unique identifier (typically numeric days, e.g., "30")
+    name: str  # Human-readable name (e.g., "Net 30")
+    source: SourceLiteral  # "excel" or "quickbooks"
 
 
 @dataclass(slots=True)
 class Conflict:
     """Describes a discrepancy between Excel and QuickBooks payment terms."""
 
-    record_id: str
-    excel_name: str | None
-    qb_name: str | None
-    reason: ConflictReason
+    record_id: str  # Shared identifier for the conflicting term
+    excel_name: str | None  # Name from Excel (None if missing there)
+    qb_name: str | None  # Name from QuickBooks (None if missing there)
+    reason: ConflictReason  # Explanation of the conflict type
 
 
 @dataclass(slots=True)
 class ComparisonReport:
     """Groups comparison outcomes for later processing."""
 
-    excel_only: list[PaymentTerm] = field(default_factory=list)
-    qb_only: list[PaymentTerm] = field(default_factory=list)
-    conflicts: list[Conflict] = field(default_factory=list)
+    excel_only: list[PaymentTerm] = field(default_factory=list)  # Present only in Excel
+    qb_only: list[PaymentTerm] = field(
+        default_factory=list
+    )  # Present only in QuickBooks
+    conflicts: list[Conflict] = field(default_factory=list)  # Same ID, differing names
 
 
 __all__ = [

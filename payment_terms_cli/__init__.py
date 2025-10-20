@@ -1,5 +1,8 @@
-"""Payment terms CLI toolkit."""
+"""Payment terms CLI toolkit.
 
-from .runner import run_payment_terms
+Exposes the high-level ``run_payment_terms`` API for programmatic use.
+"""
 
-__all__ = ["run_payment_terms"]
+from .runner import run_payment_terms  # Public API for synchronisation
+
+__all__ = ["run_payment_terms"]  # Re-exported symbol

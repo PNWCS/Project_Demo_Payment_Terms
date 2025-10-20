@@ -1,15 +1,20 @@
-"""Comparison helpers for payment terms."""
+"""Comparison helpers for payment terms.
+
+This module implements logic to reconcile two collections of payment terms: one
+originating from Excel and another from QuickBooks. The comparison identifies
+terms unique to each source and name mismatches for shared identifiers.
+"""
 
 from __future__ import annotations
 
-from typing import Dict, Iterable
+from typing import Dict, Iterable  # Types used for clarity and performance hints
 
-from .models import ComparisonReport, Conflict, PaymentTerm
+from .models import ComparisonReport, Conflict, PaymentTerm  # Domain structures
 
 
 def compare_payment_terms(
-    excel_terms: Iterable[PaymentTerm],
-    qb_terms: Iterable[PaymentTerm],
+    excel_terms: Iterable[PaymentTerm],  # Terms sourced from Excel
+    qb_terms: Iterable[PaymentTerm],  # Terms sourced from QuickBooks
 ) -> ComparisonReport:
     """Compare Excel and QuickBooks payment terms and identify discrepancies.
 
@@ -107,9 +112,32 @@ def compare_payment_terms(
     Note: NET60 appears in both sources with the same name, so it does not appear
     in any of the report's collections (no conflict, not Excel-only, not QB-only).
     """
+    # Index each collection by record_id for O(1) lookups during reconciliation
+    excel_by_id: Dict[str, PaymentTerm] = {t.record_id: t for t in excel_terms}
+    qb_by_id: Dict[str, PaymentTerm] = {t.record_id: t for t in qb_terms}
 
-    
-    raise NotImplementedError("Students must implement this function")  
+    # Terms present in Excel but absent in QuickBooks
+    excel_only = [t for rid, t in excel_by_id.items() if rid not in qb_by_id]
+    # Terms present in QuickBooks but absent in Excel
+    qb_only = [t for rid, t in qb_by_id.items() if rid not in excel_by_id]
+
+    # For shared record_ids, check whether their names differ and record conflicts
+    conflicts: list[Conflict] = []
+    for rid in excel_by_id.keys() & qb_by_id.keys():  # Set intersection of keys
+        excel_term = excel_by_id[rid]
+        qb_term = qb_by_id[rid]
+        if excel_term.name != qb_term.name:  # Case-sensitive comparison per spec
+            conflicts.append(
+                Conflict(
+                    record_id=rid,
+                    excel_name=excel_term.name,
+                    qb_name=qb_term.name,
+                    reason="name_mismatch",
+                )
+            )
+
+    # Assemble the complete comparison report
+    return ComparisonReport(excel_only=excel_only, qb_only=qb_only, conflicts=conflicts)
 
 
 __all__ = ["compare_payment_terms"]
