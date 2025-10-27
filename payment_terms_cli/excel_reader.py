@@ -12,7 +12,8 @@ from typing import List  # Concrete list type for return value
 
 from openpyxl import load_workbook  # Excel file loader
 
-from .models import PaymentTerm  # Domain model used as output
+# Use absolute import so it works both as module and script from project root
+from payment_terms_cli.models import PaymentTerm  # Domain model used as output
 
 
 def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
@@ -88,3 +89,16 @@ def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
 
 
 __all__ = ["extract_payment_terms"]  # Public API
+
+if __name__ == "__main__":  # pragma: no cover - manual invocation
+    import sys
+
+    # Allow running as a script: poetry run python payment_terms_cli/excel_reader.py
+    try:
+        terms = extract_payment_terms(Path("PaymentTerms.xlsx"))
+        for term in terms:
+            print(term)
+    except Exception as e:
+        print(f"Error: {e}")
+        print("Usage: python payment_terms_cli/excel_reader.py <path-to-workbook.xlsx>")
+        sys.exit(1)

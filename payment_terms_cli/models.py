@@ -19,9 +19,14 @@ ConflictReason = Literal[
 class PaymentTerm:
     """Represents a payment term synchronised between Excel and QuickBooks."""
 
-    record_id: str  # Unique identifier (typically numeric days, e.g., "30")
+    record_id: str  # Unique identifier (company database id)
     name: str  # Human-readable name (e.g., "Net 30")
     source: SourceLiteral  # "excel" or "quickbooks"
+
+    def __str__(self) -> str:
+        return (
+            f"PaymentTerm(id={self.record_id}, name={self.name}, source={self.source})"
+        )
 
 
 @dataclass(slots=True)
