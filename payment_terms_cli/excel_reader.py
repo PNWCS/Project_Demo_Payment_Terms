@@ -45,12 +45,13 @@ def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
 
     # Build a mapping from header name to its column index
     headers = [
-        str(header).strip() if header is not None else "" for header in headers_row
+        (str(header).strip().lower() if header is not None else "")
+        for header in headers_row
     ]
-    header_index = {header: idx for idx, header in enumerate(headers)}
+    header_index = {header: idx for idx, header in enumerate(headers) if header}
 
     def _value(row, column_name: str):  # Helper to safely access a column
-        idx = header_index.get(column_name)
+        idx = header_index.get(column_name.lower())
         if idx is None or idx >= len(row):
             return None
         return row[idx]
@@ -58,9 +59,9 @@ def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
     terms: List[PaymentTerm] = []  # Accumulator for valid terms
     try:
         for row in rows:  # Iterate over each data row
-            raw_id = _value(row, "ID")  # Expected ID column (e.g., number of days)
+            raw_id = _value(row, "id")  # Expected ID column (e.g., number of days)
 
-            name = _value(row, "Name")  # Expected Name column
+            name = _value(row, "name")  # Expected Name column
             if name is None:
                 continue  # Skip rows without a name
             name_str = str(name).strip()
@@ -78,9 +79,31 @@ def extract_payment_terms(workbook_path: Path) -> List[PaymentTerm]:
             if not record_id:
                 continue  # Skip empty/invalid IDs
 
+            raw_due = _value(row, "duedate")
+            if raw_due in (None, ""):
+                raw_due = _value(row, "due date")
+            if raw_due in (None, ""):
+                raw_due = _value(row, "due_days")
+            if raw_due in (None, ""):
+                raw_due = _value(row, "due days")
+            due_days: int | None = None
+            if raw_due not in (None, ""):
+                try:
+                    due_days = int(raw_due)
+                except (TypeError, ValueError):
+                    try:
+                        due_days = int(float(raw_due))
+                    except (TypeError, ValueError):
+                        due_days = None
+
             # Construct the domain object tagged as sourced from Excel
             terms.append(
-                PaymentTerm(record_id=record_id, name=name_str, source="excel")
+                PaymentTerm(
+                    record_id=record_id,
+                    name=name_str,
+                    source="excel",
+                    due_days=due_days,
+                )
             )
     finally:
         workbook.close()  # Always close the workbook handle

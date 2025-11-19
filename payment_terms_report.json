@@ -1,26 +1,33 @@
 {
   "status": "success",
-  "generated_at": "2025-10-20T19:03:35.065924+00:00",
-  "added_terms": [
-    {
-      "record_id": "1",
-      "name": "Net 30",
-      "source": "quickbooks"
-    }
-  ],
+  "generated_at": "2025-11-19T19:35:04.276930+00:00",
+  "added_terms": [],
   "conflicts": [
     {
       "record_id": "12",
+      "reason": "data_mismatch",
       "excel_name": "Net 100",
       "qb_name": "Net 90",
-      "reason": "name_mismatch"
+      "excel_due_days": 2,
+      "qb_due_days": 0
+    },
+    {
+      "record_id": "11",
+      "reason": "data_mismatch",
+      "excel_name": "EOM+60",
+      "qb_name": "EOM+60",
+      "excel_due_days": 1,
+      "qb_due_days": 0
     },
     {
       "record_id": "9",
+      "reason": "missing_in_excel",
       "excel_name": null,
       "qb_name": "Due on receipt",
-      "reason": "missing_in_excel"
+      "excel_due_days": null,
+      "qb_due_days": 0
     }
   ],
+  "same_terms": 4,
   "error": null
 }

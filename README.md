@@ -24,6 +24,12 @@ Run tests with:
 poetry run pytest
 ```
 
+Generate a coverage report with:
+```bash
+poetry run pytest --cov=payment_terms_cli --cov-report=term-missing
+```
+Add `--cov-report=html` to emit an HTML report in `htmlcov/`.
+
 ## Building as Executable
 
 To build the project as a standalone `.exe`:
@@ -42,32 +48,21 @@ To build the project as a standalone `.exe`:
 
 The `--hidden-import` flags ensure PyInstaller includes the Windows COM dependencies needed for QuickBooks integration.
 
-## Dummy Executables
+### Running the Executable
 
-For GUI development, this repo includes small dummy scripts that generate JSON
-reports without connecting to QuickBooks. They live in `dummy_exes/`:
+After building, launch the CLI directly from Command Prompt:
 
-- `dummy_exes/payment_terms_dummy.py` — writes `payment_terms_report.json`-shaped output
-- `dummy_exes/customers_dummy.py` — writes a similar report for customers
-- `dummy_exes/vendors_dummy.py` — writes a similar report for vendors
+1. Change into the `dist` directory (or reference the full path):
+   ```cmd
+   cd dist
+   ```
+2. Run the executable with the same arguments the Python entry point expects:
+   ```cmd
+   payment_terms_cli.exe --workbook C:\path\to\PaymentTerms.xlsx --output C:\path\to\report.json
+   ```
 
-Run directly with Python:
+If you omit `--output`, the report defaults to `payment_terms_report.json` in the current directory. You can also invoke it without `cd` by using the absolute path, e.g.:
 
-```bash
-poetry run python -m dummy_exes.payment_terms_dummy --workbook PaymentTerms.xlsx --output payment_terms_report.json
-poetry run python -m dummy_exes.customers_dummy --workbook PaymentTerms.xlsx --output customers_report.json
-poetry run python -m dummy_exes.vendors_dummy --workbook PaymentTerms.xlsx --output vendors_report.json
+```cmd
+C:\Users\VictorG\Project_Demo_Terms\Project_Demo_Payment_Terms\dist\payment_terms_cli.exe --workbook PaymentTerms.xlsx
 ```
-
-Or build standalone executables with PyInstaller:
-
-```bash
-poetry run pyinstaller --onefile --name payment_terms_dummy dummy_exes/payment_terms_dummy.py
-poetry run pyinstaller --onefile --name customers_dummy dummy_exes/customers_dummy.py
-poetry run pyinstaller --onefile --name vendors_dummy dummy_exes/vendors_dummy.py
-```
-
-These dummy binaries have no external dependencies and do not require
-QuickBooks. Each script requires a `--workbook` path for CLI compatibility and
-accepts an optional `--output` path to control where the JSON file is written
-(defaults shown above).

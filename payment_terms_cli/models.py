@@ -11,7 +11,7 @@ from typing import Literal  # Constrained string types for clarity
 
 SourceLiteral = Literal["excel", "quickbooks"]  # Origin of a PaymentTerm
 ConflictReason = Literal[
-    "name_mismatch", "missing_in_excel", "missing_in_quickbooks"
+    "data_mismatch", "missing_in_excel", "missing_in_quickbooks"
 ]  # Why a conflict exists
 
 
@@ -22,10 +22,12 @@ class PaymentTerm:
     record_id: str  # Unique identifier (company database id)
     name: str  # Human-readable name (e.g., "Net 30")
     source: SourceLiteral  # "excel" or "quickbooks"
+    due_days: int | None = None  # Optional due date in days
 
     def __str__(self) -> str:
         return (
-            f"PaymentTerm(id={self.record_id}, name={self.name}, source={self.source})"
+            f"PaymentTerm(id={self.record_id}, name={self.name}, "
+            f"source={self.source}, due_days={self.due_days})"
         )
 
 
@@ -34,9 +36,11 @@ class Conflict:
     """Describes a discrepancy between Excel and QuickBooks payment terms."""
 
     record_id: str  # Shared identifier for the conflicting term
-    excel_name: str | None  # Name from Excel (None if missing there)
-    qb_name: str | None  # Name from QuickBooks (None if missing there)
     reason: ConflictReason  # Explanation of the conflict type
+    excel_name: str | None = None
+    qb_name: str | None = None
+    excel_due_days: int | None = None
+    qb_due_days: int | None = None
 
 
 @dataclass(slots=True)
@@ -47,7 +51,7 @@ class ComparisonReport:
     qb_only: list[PaymentTerm] = field(
         default_factory=list
     )  # Present only in QuickBooks
-    conflicts: list[Conflict] = field(default_factory=list)  # Same ID, differing names
+    conflicts: list[Conflict] = field(default_factory=list)  # Same ID, differing data
 
 
 __all__ = [

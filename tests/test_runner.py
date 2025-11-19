@@ -15,9 +15,9 @@ from payment_terms_cli.runner import run_payment_terms
 def mock_excel_terms():
     """Mock Excel payment terms."""
     return [
-        PaymentTerm(record_id="15", name="Net 15", source="excel"),
-        PaymentTerm(record_id="30", name="Net 30", source="excel"),
-        PaymentTerm(record_id="45", name="Net 45", source="excel"),
+        PaymentTerm(record_id="15", name="Net 15", source="excel", due_days=15),
+        PaymentTerm(record_id="30", name="Net 30", source="excel", due_days=30),
+        PaymentTerm(record_id="45", name="Net 45", source="excel", due_days=45),
     ]
 
 
@@ -25,8 +25,8 @@ def mock_excel_terms():
 def mock_qb_terms():
     """Mock QuickBooks payment terms."""
     return [
-        PaymentTerm(record_id="30", name="Net 30", source="quickbooks"),
-        PaymentTerm(record_id="60", name="Net 60", source="quickbooks"),
+        PaymentTerm(record_id="30", name="Net 30", source="quickbooks", due_days=30),
+        PaymentTerm(record_id="60", name="Net 60", source="quickbooks", due_days=60),
     ]
 
 
@@ -35,11 +35,11 @@ def mock_comparison_no_conflicts():
     """Mock comparison with no conflicts - only new terms to add."""
     comparison = ComparisonReport()
     comparison.excel_only = [
-        PaymentTerm(record_id="15", name="Net 15", source="excel"),
-        PaymentTerm(record_id="45", name="Net 45", source="excel"),
+        PaymentTerm(record_id="15", name="Net 15", source="excel", due_days=15),
+        PaymentTerm(record_id="45", name="Net 45", source="excel", due_days=45),
     ]
     comparison.qb_only = [
-        PaymentTerm(record_id="60", name="Net 60", source="quickbooks"),
+        PaymentTerm(record_id="60", name="Net 60", source="quickbooks", due_days=60),
     ]
     comparison.conflicts = []
     return comparison
@@ -50,15 +50,17 @@ def mock_comparison_with_conflicts():
     """Mock comparison with name mismatch conflicts."""
     comparison = ComparisonReport()
     comparison.excel_only = [
-        PaymentTerm(record_id="15", name="Net 15", source="excel"),
+        PaymentTerm(record_id="15", name="Net 15", source="excel", due_days=15),
     ]
     comparison.qb_only = []
     comparison.conflicts = [
         Conflict(
             record_id="30",
+            reason="data_mismatch",
             excel_name="Net 30",
             qb_name="Payment in 30 days",
-            reason="name_mismatch",
+            excel_due_days=30,
+            qb_due_days=30,
         )
     ]
     return comparison
@@ -121,6 +123,7 @@ class TestRunPaymentTerms:
         assert report_payload["added_terms"][1]["record_id"] == "45"
         assert len(report_payload["conflicts"]) == 1  # One missing_in_excel conflict
         assert report_payload["conflicts"][0]["reason"] == "missing_in_excel"
+        assert report_payload["same_terms"] == 1
         assert report_payload["error"] is None
 
     @patch("payment_terms_cli.runner.excel_reader.extract_payment_terms")
@@ -146,7 +149,18 @@ class TestRunPaymentTerms:
         output_path = tmp_path / "report.json"
 
         mock_extract_excel.return_value = mock_excel_terms
-        mock_fetch_qb.return_value = mock_qb_terms
+        conflict_qb_terms = [
+            PaymentTerm(
+                record_id="30",
+                name="Payment in 30 days",
+                source="quickbooks",
+                due_days=30,
+            ),
+            PaymentTerm(
+                record_id="60", name="Net 60", source="quickbooks", due_days=60
+            ),
+        ]
+        mock_fetch_qb.return_value = conflict_qb_terms
         mock_compare.return_value = mock_comparison_with_conflicts
 
         added_terms = [
@@ -167,9 +181,13 @@ class TestRunPaymentTerms:
         assert report_payload["status"] == "success"
         assert len(report_payload["added_terms"]) == 1
         assert len(report_payload["conflicts"]) == 1
-        assert report_payload["conflicts"][0]["reason"] == "name_mismatch"
-        assert report_payload["conflicts"][0]["excel_name"] == "Net 30"
-        assert report_payload["conflicts"][0]["qb_name"] == "Payment in 30 days"
+        conflict = report_payload["conflicts"][0]
+        assert conflict["reason"] == "data_mismatch"
+        assert conflict["excel_name"] == "Net 30"
+        assert conflict["qb_name"] == "Payment in 30 days"
+        assert conflict["excel_due_days"] == 30
+        assert conflict["qb_due_days"] == 30
+        assert report_payload["same_terms"] == 0
 
     @patch("payment_terms_cli.runner.excel_reader.extract_payment_terms")
     @patch("payment_terms_cli.runner.qb_gateway.fetch_payment_terms")
@@ -217,6 +235,7 @@ class TestRunPaymentTerms:
         assert report_payload["status"] == "success"
         assert len(report_payload["added_terms"]) == 0
         assert len(report_payload["conflicts"]) == 0
+        assert report_payload["same_terms"] == 1
 
     @patch("payment_terms_cli.runner.excel_reader.extract_payment_terms")
     @patch("payment_terms_cli.runner.qb_gateway.fetch_payment_terms")
@@ -250,6 +269,7 @@ class TestRunPaymentTerms:
         assert "QuickBooks connection failed" in report_payload["error"]
         assert len(report_payload["added_terms"]) == 0
         assert len(report_payload["conflicts"]) == 0
+        assert report_payload["same_terms"] == 0
 
     @patch("payment_terms_cli.runner.excel_reader.extract_payment_terms")
     @patch("payment_terms_cli.runner.write_report")
@@ -278,6 +298,7 @@ class TestRunPaymentTerms:
 
         assert report_payload["status"] == "error"
         assert "Excel file not found" in report_payload["error"]
+        assert report_payload["same_terms"] == 0
 
     @patch("payment_terms_cli.runner.excel_reader.extract_payment_terms")
     @patch("payment_terms_cli.runner.qb_gateway.fetch_payment_terms")

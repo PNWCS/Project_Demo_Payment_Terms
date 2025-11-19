@@ -2,7 +2,7 @@
 
 This module communicates with QuickBooks Desktop via the QBXML Request Processor
 COM interface exposed by ``pywin32``. It provides functions to query existing
-payment terms and to add new terms either individually or in batches.
+payment terms and to add new terms in batches.
 """
 
 from __future__ import annotations  # Enable postponed evaluation of annotations
@@ -109,7 +109,20 @@ def fetch_payment_terms(company_file: str | None = None) -> List[PaymentTerm]:
         if not record_id:
             continue  # Skip empty IDs after normalisation
 
-        terms.append(PaymentTerm(record_id=record_id, name=name, source="quickbooks"))
+        due_days_text = term_ret.findtext("StdDueDays")
+        try:
+            due_days = int(due_days_text) if due_days_text is not None else None
+        except ValueError:
+            due_days = None
+
+        terms.append(
+            PaymentTerm(
+                record_id=record_id,
+                name=name,
+                source="quickbooks",
+                due_days=due_days,
+            )
+        )
 
     return terms  # Return all collected terms
 
@@ -132,12 +145,23 @@ def add_payment_terms_batch(
                 f"record_id must be numeric for QuickBooks payment terms: {term.record_id}"
             ) from exc
 
+        if term.due_days is None:
+            due_days_value = days_value
+        else:
+            try:
+                due_days_value = int(term.due_days)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"due_days must be numeric for QuickBooks payment terms: {term.due_days}"
+                ) from exc
+
         # Build the QBXML snippet for this term creation
         requests.append(
             f"    <StandardTermsAddRq>\n"
             f"      <StandardTermsAdd>\n"
             f"        <Name>{_escape_xml(term.name)}</Name>\n"
             f"        <StdDiscountDays>{days_value}</StdDiscountDays>\n"
+            f"        <StdDueDays>{due_days_value}</StdDueDays>\n"
             f"        <DiscountPct>0</DiscountPct>\n"
             f"      </StandardTermsAdd>\n"
             f"    </StandardTermsAddRq>"
@@ -170,65 +194,21 @@ def add_payment_terms_batch(
         except ValueError:
             record_id = record_id.strip()
         name = (term_ret.findtext("Name") or "").strip()  # Extract and trim name
+        due_days_text = term_ret.findtext("StdDueDays")
+        try:
+            due_days = int(due_days_text) if due_days_text is not None else None
+        except ValueError:
+            due_days = None
         added_terms.append(
-            PaymentTerm(record_id=record_id, name=name, source="quickbooks")
+            PaymentTerm(
+                record_id=record_id,
+                name=name,
+                source="quickbooks",
+                due_days=due_days,
+            )
         )
 
     return added_terms  # Return all terms that were added/acknowledged
-
-
-def add_payment_term(company_file: str | None, term: PaymentTerm) -> PaymentTerm:
-    """Create a single payment term in QuickBooks and return the stored record."""
-
-    try:
-        days_value = int(term.record_id)  # Validate that the ID is numeric
-    except ValueError as exc:
-        raise ValueError(
-            "record_id must be numeric for QuickBooks payment terms"
-        ) from exc
-
-    qbxml = (
-        '<?xml version="1.0"?>\n'
-        '<?qbxml version="13.0"?>\n'
-        "<QBXML>\n"
-        '  <QBXMLMsgsRq onError="stopOnError">\n'
-        "    <StandardTermsAddRq>\n"
-        "      <StandardTermsAdd>\n"
-        f"        <Name>{_escape_xml(term.name)}</Name>\n"
-        f"        <StdDiscountDays>{days_value}</StdDiscountDays>\n"
-        "        <DiscountPct>0</DiscountPct>\n"
-        "      </StandardTermsAdd>\n"
-        "    </StandardTermsAddRq>\n"
-        "  </QBXMLMsgsRq>\n"
-        "</QBXML>"
-    )  # Single add request with stop-on-error behavior
-
-    try:
-        root = _send_qbxml(qbxml)  # Send request and parse response
-    except RuntimeError as exc:
-        # Check if error is "name already in use" (error code 3100)
-        if "already in use" in str(exc):
-            # Return the term as-is since it already exists
-            return PaymentTerm(
-                record_id=term.record_id, name=term.name, source="quickbooks"
-            )
-        raise  # Re-raise other errors
-
-    term_ret = root.find(".//StandardTermsRet")  # Extract the returned record, if any
-    if term_ret is None:
-        # Some responses may omit the created object; fall back to input values
-        return PaymentTerm(
-            record_id=term.record_id, name=term.name, source="quickbooks"
-        )
-
-    record_id = term_ret.findtext("StdDiscountDays") or term.record_id  # Prefer QB's ID
-    try:
-        record_id = str(int(record_id))  # Normalise to a clean numeric string
-    except ValueError:
-        record_id = record_id.strip()
-    name = (term_ret.findtext("Name") or term.name).strip()  # Prefer QB's name
-
-    return PaymentTerm(record_id=record_id, name=name, source="quickbooks")
 
 
 def _escape_xml(value: str) -> str:
@@ -244,6 +224,5 @@ def _escape_xml(value: str) -> str:
 
 __all__ = [
     "fetch_payment_terms",
-    "add_payment_term",
     "add_payment_terms_batch",
 ]  # Public API

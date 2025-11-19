@@ -18,21 +18,28 @@ from .reporting import iso_timestamp, write_report  # JSON and timestamps
 DEFAULT_REPORT_NAME = "payment_terms_report.json"  # Default output filename
 
 
-def _term_to_dict(term: PaymentTerm) -> Dict[str, str]:
+def _term_to_dict(term: PaymentTerm) -> Dict[str, object]:
     """Convert a PaymentTerm object into a serialisable dict.
 
     This shape is used in the JSON report's "added_terms" collection.
     """
-    return {"record_id": term.record_id, "name": term.name, "source": term.source}
+    return {
+        "record_id": term.record_id,
+        "name": term.name,
+        "source": term.source,
+        "due_days": term.due_days,
+    }
 
 
 def _conflict_to_dict(conflict: Conflict) -> Dict[str, object]:
     """Convert a Conflict object into a serialisable dict for the report."""
     return {
         "record_id": conflict.record_id,
+        "reason": conflict.reason,
         "excel_name": conflict.excel_name,
         "qb_name": conflict.qb_name,
-        "reason": conflict.reason,
+        "excel_due_days": conflict.excel_due_days,
+        "qb_due_days": conflict.qb_due_days,
     }
 
 
@@ -44,10 +51,29 @@ def _missing_in_excel_conflict(term: PaymentTerm) -> Dict[str, object]:
     """
     return {
         "record_id": term.record_id,
+        "reason": "missing_in_excel",
         "excel_name": None,
         "qb_name": term.name,
-        "reason": "missing_in_excel",
+        "excel_due_days": None,
+        "qb_due_days": term.due_days,
     }
+
+
+def _count_matching_terms(
+    excel_terms: List[PaymentTerm], qb_terms: List[PaymentTerm]
+) -> int:
+    """Return the number of terms that exist in both sources with identical data."""
+
+    excel_by_id = {term.record_id: term for term in excel_terms}
+    qb_by_id = {term.record_id: term for term in qb_terms}
+
+    matches = 0
+    for record_id in excel_by_id.keys() & qb_by_id.keys():
+        excel_term = excel_by_id[record_id]
+        qb_term = qb_by_id[record_id]
+        if excel_term.name == qb_term.name and excel_term.due_days == qb_term.due_days:
+            matches += 1
+    return matches
 
 
 def run_payment_terms(
@@ -77,6 +103,7 @@ def run_payment_terms(
         "generated_at": iso_timestamp(),
         "added_terms": [],
         "conflicts": [],
+        "same_terms": 0,
         "error": None,
     }
 
@@ -93,7 +120,7 @@ def run_payment_terms(
             company_file_path, comparison.excel_only
         )
 
-        # Build conflicts list: name mismatches + items missing from Excel
+        # Build conflicts list: data mismatches + items missing from Excel
         conflicts: List[Dict[str, object]] = []
         conflicts.extend(
             _conflict_to_dict(conflict) for conflict in comparison.conflicts
@@ -105,6 +132,7 @@ def run_payment_terms(
         # Populate the report payload with results
         report_payload["added_terms"] = [_term_to_dict(term) for term in added_terms]
         report_payload["conflicts"] = conflicts
+        report_payload["same_terms"] = _count_matching_terms(excel_terms, qb_terms)
 
     except Exception as exc:  # pragma: no cover - behaviour verified via tests
         # On any error, capture the message and mark the report as failure

@@ -24,7 +24,7 @@ def compare_payment_terms(
 
     1. Terms that exist only in Excel
     2. Terms that exist only in QuickBooks
-    3. Terms with matching ``record_id`` but different ``name`` values
+    3. Terms with matching ``record_id`` but different field values (e.g., name or due date)
 
     **Input Parameters:**
 
@@ -33,6 +33,7 @@ def compare_payment_terms(
 
         - ``record_id`` (str): Unique identifier for the payment term
         - ``name`` (str): Display name of the payment term
+        - ``due_days`` (int | None): Number of days until due (optional)
         - ``source`` (SourceLiteral): Will be "excel" for these terms
 
         Example: ``PaymentTerm(record_id="NET30", name="Net 30", source="excel")``
@@ -57,21 +58,17 @@ def compare_payment_terms(
           terms that may need to be removed from QuickBooks or added to Excel.
 
         - ``conflicts`` (list[Conflict]): Terms where the same ``record_id`` exists
-          in both sources but the ``name`` field differs. Each
-          :class:`~payment_terms_cli.models.Conflict` must have:
-
-          - ``record_id`` (str): The shared record ID
-          - ``excel_name`` (str | None): The name from Excel
-          - ``qb_name`` (str | None): The name from QuickBooks
-          - ``reason`` (ConflictReason): Must be ``"name_mismatch"`` for these cases
+          in both sources but one or more attributes differ. Each
+          :class:`~payment_terms_cli.models.Conflict` must include the Excel and
+          QuickBooks values for the differing fields with ``reason="data_mismatch"``.
 
     **Implementation Requirements:**
 
     1. Compare terms based on their ``record_id`` field (case-sensitive)
     2. Build dictionaries or sets for efficient lookup of record IDs
     3. Identify terms unique to each source (Excel-only and QB-only)
-    4. For matching ``record_id`` values, compare the ``name`` fields
-    5. If names differ, create a Conflict with reason ``"name_mismatch"``
+    4. For matching ``record_id`` values, compare the relevant attributes (e.g., ``name``, ``due_days``)
+    5. If any attribute differs, create a Conflict with reason ``"data_mismatch"``
     6. Return all findings in a ComparisonReport object
 
     **Example:**
@@ -79,15 +76,30 @@ def compare_payment_terms(
     Given these inputs::
 
         excel_terms = [
-            PaymentTerm(record_id="NET30", name="Net 30", source="excel"),
-            PaymentTerm(record_id="NET60", name="Net 60", source="excel"),
-            PaymentTerm(record_id="COD", name="Cash on Delivery", source="excel"),
+            PaymentTerm(record_id="NET30", name="Net 30", source="excel", due_days=30),
+            PaymentTerm(record_id="NET60", name="Net 60", source="excel", due_days=60),
+            PaymentTerm(
+                record_id="COD",
+                name="Cash on Delivery",
+                source="excel",
+                due_days=None,
+            ),
         ]
 
         qb_terms = [
-            PaymentTerm(record_id="NET30", name="Net 30 Days", source="quickbooks"),
-            PaymentTerm(record_id="NET60", name="Net 60", source="quickbooks"),
-            PaymentTerm(record_id="DUE", name="Due on Receipt", source="quickbooks"),
+            PaymentTerm(
+                record_id="NET30",
+                name="Net 30 Days",
+                source="quickbooks",
+                due_days=30,
+            ),
+            PaymentTerm(record_id="NET60", name="Net 60", source="quickbooks", due_days=60),
+            PaymentTerm(
+                record_id="DUE",
+                name="Due on Receipt",
+                source="quickbooks",
+                due_days=0,
+            ),
         ]
 
     Expected output::
@@ -102,9 +114,11 @@ def compare_payment_terms(
             conflicts=[
                 Conflict(
                     record_id="NET30",
+                    reason="data_mismatch",
                     excel_name="Net 30",
                     qb_name="Net 30 Days",
-                    reason="name_mismatch"
+                    excel_due_days=30,
+                    qb_due_days=30,
                 )
             ]
         )
@@ -121,18 +135,20 @@ def compare_payment_terms(
     # Terms present in QuickBooks but absent in Excel
     qb_only = [t for rid, t in qb_by_id.items() if rid not in excel_by_id]
 
-    # For shared record_ids, check whether their names differ and record conflicts
+    # For shared record_ids, check whether their attributes differ and record conflicts
     conflicts: list[Conflict] = []
     for rid in excel_by_id.keys() & qb_by_id.keys():  # Set intersection of keys
         excel_term = excel_by_id[rid]
         qb_term = qb_by_id[rid]
-        if excel_term.name != qb_term.name:  # Case-sensitive comparison per spec
+        if excel_term.name != qb_term.name or excel_term.due_days != qb_term.due_days:
             conflicts.append(
                 Conflict(
                     record_id=rid,
+                    reason="data_mismatch",
                     excel_name=excel_term.name,
                     qb_name=qb_term.name,
-                    reason="name_mismatch",
+                    excel_due_days=excel_term.due_days,
+                    qb_due_days=qb_term.due_days,
                 )
             )
 
